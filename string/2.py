@@ -1,0 +1,1 @@
+print("Azamat really like fucking Niko Net ")
