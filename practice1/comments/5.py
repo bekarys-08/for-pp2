@@ -1,0 +1,1 @@
+print("hello,world") #this will give the output of hello,world
