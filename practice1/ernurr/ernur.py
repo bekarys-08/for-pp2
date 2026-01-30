@@ -1,1 +1,0 @@
-print("arslan a little girl")
