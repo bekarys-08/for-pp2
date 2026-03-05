@@ -1,6 +1,6 @@
 import re
 import json
-with open(r"C:/Users/admin/Desktop/PP2/Practice5/raw.txt", encoding="utf-8") as f:
+with open(r"c:/Users/10W030825/Desktop/For pp2/Practice5/raw.txt", encoding="utf-8") as f:
     text = f.read()
 
 # Prices
