@@ -1,0 +1,4 @@
+Phone,5
+Charger,10
+Case,14
+Cable,9

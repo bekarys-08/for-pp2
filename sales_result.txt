@@ -1,0 +1,14 @@
+Total records: 12
+Average quantity sold: 17.1
+Highest quantity sold: 40
+Lowest quantity sold: 5
+
+Popular products:
+Cable 40
+Case 30
+Charger 25
+Case 20
+Cable 18
+Charger 15
+Case 14
+Phone 12
