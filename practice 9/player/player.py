@@ -5,7 +5,7 @@ current_index = 0
 
 def play_track():
     if playlist:
-        pygame.mixer.music.load("music/" + playlist[current_index])
+        pygame.mixer.music.load("c:/Users/10W030825/Desktop/for pp2/practice 9/player/music/" + playlist[current_index])
         pygame.mixer.music.play()
 
 def next_track():
@@ -25,4 +25,3 @@ def toggle_pause():
         pygame.mixer.music.pause()
     else:
         pygame.mixer.music.unpause()
-        
