@@ -3,7 +3,6 @@ import psycopg2
 from config import DB_CONFIG
 from connect import get_connection
 
-# ==================== INSERT FROM CSV ====================
 def insert_from_csv():
     filepath = r"C:\Users\10W030825\Desktop\for pp2\practice7\contacts.csv"
     conn = get_connection()
@@ -20,8 +19,8 @@ def insert_from_csv():
     cur.close()
     conn.close()
     print("✅ Contacts loaded from CSV")
+   
 
-# ==================== INSERT FROM CONSOLE ====================
 def insert_from_console():
     name = input("Enter name: ")
     phone = input("Enter phone: ")
@@ -36,8 +35,10 @@ def insert_from_console():
     cur.close()
     conn.close()
     print("✅ Contact added")
+   
 
-# ==================== SHOW ALL ====================
+
+
 def show_all_contacts():
     conn = get_connection()
     cur = conn.cursor()
@@ -52,7 +53,7 @@ def show_all_contacts():
     cur.close()
     conn.close()
 
-# ==================== SEARCH ====================
+
 def search_contacts():
     print("1 - by name | 2 - by phone")
     choice = input("Choice: ")
@@ -73,7 +74,7 @@ def search_contacts():
     cur.close()
     conn.close()
 
-# ==================== UPDATE ====================
+
 def update_contact():
     phone = input("Enter phone of contact to update: ")
     print("1 - change name | 2 - change phone")
@@ -91,7 +92,6 @@ def update_contact():
     conn.close()
     print("✅ Contact updated")
 
-# ==================== DELETE ====================
 def delete_contact():
     print("1 - by name | 2 - by phone")
     choice = input("Choice: ")
@@ -108,7 +108,7 @@ def delete_contact():
     conn.close()
     print("✅ Contact deleted")
 
-# ==================== MENU ====================
+
 def main():
     while True:
         print("\n===== PhoneBook =====")
