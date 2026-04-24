@@ -46,7 +46,7 @@ def spawn_enemy():
     return pygame.Rect(x, -80, 50, 80)
 
 def spawn_coin():
-    """Pick a random coin type based on weight, spawn it at top."""
+    
     weights = [ct["weight"] for ct in COIN_TYPES]
     coin_type = random.choices(COIN_TYPES, weights=weights)[0]
     r = coin_type["radius"]
