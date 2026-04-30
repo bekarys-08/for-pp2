@@ -1,98 +1,91 @@
 import psycopg2
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
+def get_conn():
+    return psycopg2.connect(
+        host=DB_HOST, port=DB_PORT,
+        dbname=DB_NAME, user=DB_USER, password=DB_PASS
+    )
 
-DB_CONFIG = {
-    "dbname": "pp2", # Change if you created a specific database
-    "user": "postgres",
-    "password": "270708", # 
-    "host": "localhost",
-    "port": "5432",
-    "client_encoding": "utf8"  # Forces correct encoding to prevent Unicode errors
-}
+def setup_schema():
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS players (
+            id       SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL
+        );
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS game_sessions (
+            id            SERIAL PRIMARY KEY,
+            player_id     INTEGER REFERENCES players(id),
+            score         INTEGER   NOT NULL,
+            level_reached INTEGER   NOT NULL,
+            played_at     TIMESTAMP DEFAULT NOW()
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
-def get_connection():
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        return conn
-    except psycopg2.Error as e:
-        print("\n--- DATABASE CONNECTION ERROR ---")
-        print(f"Details: {e}")
-        print("1. Check if PostgreSQL service is running.")
-        print("2. Verify 'password' in DB_CONFIG.")
-        print("3. Ensure database 'postgres' exists.")
-        print("---------------------------------\n")
-        raise e 
-
-def setup_database():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS players (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS game_sessions (
-                id SERIAL PRIMARY KEY,
-                player_id INTEGER REFERENCES players(id),
-                score INTEGER NOT NULL,
-                level_reached INTEGER NOT NULL,
-                played_at TIMESTAMP DEFAULT NOW()
-            );
-        """)
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"Database Setup Error: {e}")
 
 def get_or_create_player(username):
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("SELECT id FROM players WHERE username = %s", (username,))
+    row = cur.fetchone()
+    if row:
+        pid = row[0]
+    else:
+        cur.execute(
+            "INSERT INTO players (username) VALUES (%s) RETURNING id",
+            (username,)
+        )
+        pid = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return pid
+
+def save_session(username, score, level):
+    pid = get_or_create_player(username)
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute(
+        "INSERT INTO game_sessions (player_id, score, level_reached) VALUES (%s, %s, %s)",
+        (pid, score, level)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_personal_best(username):
+    conn = get_conn()
+    cur  = conn.cursor()
     cur.execute("""
-        INSERT INTO players (username) VALUES (%s)
-        ON CONFLICT (username) DO NOTHING;
+        SELECT MAX(gs.score)
+        FROM game_sessions gs
+        JOIN players p ON p.id = gs.player_id
+        WHERE p.username = %s
     """, (username,))
-    cur.execute("SELECT id FROM players WHERE username = %s;", (username,))
-    player_id = cur.fetchone()[0]
-    conn.commit()
+    row = cur.fetchone()
     cur.close()
     conn.close()
-    return player_id
+    return row[0] or 0 if row else 0
 
-def save_score(player_id, score, level):
-    conn = get_connection()
-    cur = conn.cursor()
+
+def get_top10():
+    conn = get_conn()
+    cur  = conn.cursor()
     cur.execute("""
-        INSERT INTO game_sessions (player_id, score, level_reached)
-        VALUES (%s, %s, %s);
-    """, (player_id, score, level))
-    conn.commit()
+        SELECT p.username, gs.score, gs.level_reached,
+               TO_CHAR(gs.played_at, 'DD Mon HH24:MI')
+        FROM game_sessions gs
+        JOIN players p ON p.id = gs.player_id
+        ORDER BY gs.score DESC
+        LIMIT 10
+    """)
+    rows = cur.fetchall()
     cur.close()
     conn.close()
-
-def get_top_10():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT p.username, s.score, s.level_reached, s.played_at::date 
-            FROM game_sessions s
-            JOIN players p ON s.player_id = p.id
-            ORDER BY s.score DESC
-            LIMIT 10;
-        """)
-        top_10 = cur.fetchall()
-        cur.close()
-        conn.close()
-        return top_10
-    except:
-        return []
-
-def get_personal_best(player_id):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT MAX(score) FROM game_sessions WHERE player_id = %s;", (player_id,))
-    best = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    return best if best else 0
+    return rows

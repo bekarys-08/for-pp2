@@ -1,11 +1,10 @@
 {
-    "sound": true,
-    "car_color": "red",
-    "difficulty": "normal",
-    "snake_color": [
-        0,
-        100,
-        255
-    ],
-    "grid_overlay": true
+  "snake_color": [
+    0,
+    220,
+    0
+  ],
+  "grid": true,
+  "sound": true,
+  "username": "BEKARYS"
 }

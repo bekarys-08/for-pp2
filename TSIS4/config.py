@@ -1,40 +1,34 @@
-import json
-import os
+SCREEN_WIDTH  = 600
+SCREEN_HEIGHT = 400
+GRID_SIZE     = 20
+GRID_W        = SCREEN_WIDTH  // GRID_SIZE   # 30 cells wide
+GRID_H        = SCREEN_HEIGHT // GRID_SIZE   # 20 cells tall
+UI_HEIGHT     = 60
+FPS           = 60
+# Directions
+UP    = (0, -1)
+DOWN  = (0,  1)
+LEFT  = (-1, 0)
+RIGHT = ( 1, 0)
 
-SETTINGS_FILE = "settings.json"
+# Colors
+BLACK      = (0,   0,   0  )
+WHITE      = (255, 255, 255)
+GREEN      = (0,   220, 0  )
+DARK_GREEN = (0,   160, 0  )
+RED        = (220, 40,  40 )
+DARK_RED   = (120, 0,   0  )   # poison food
+YELLOW     = (255, 220, 0  )
+ORANGE     = (255, 140, 0  )
+BLUE       = (50,  120, 255)
+CYAN       = (0,   200, 230)
+GRAY       = (120, 120, 120)
+DARK_GRAY  = (50,  50,  50 )
+PURPLE     = (160, 0,   200)
 
-DEFAULT_SETTINGS = {
-    "snake_color": [0, 255, 0],
-    "grid_overlay": True,
-    "sound": True
-}
-
-def load_settings():
-    # If file doesn't exist, create it with defaults
-    if not os.path.exists(SETTINGS_FILE):
-        save_settings(DEFAULT_SETTINGS)
-        return DEFAULT_SETTINGS
-    
-    try:
-        with open(SETTINGS_FILE, "r") as f:
-            user_settings = json.load(f)
-        
-        # FIX: Ensure all default keys exist in the loaded dictionary
-        updated = False
-        for key, value in DEFAULT_SETTINGS.items():
-            if key not in user_settings:
-                user_settings[key] = value
-                updated = True
-        
-        if updated:
-            save_settings(user_settings)
-            
-        return user_settings
-    except (json.JSONDecodeError, Exception):
-        # If the file is broken/corrupted, overwrite with defaults
-        save_settings(DEFAULT_SETTINGS)
-        return DEFAULT_SETTINGS
-
-def save_settings(settings):
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f, indent=4)
+# DB connection — change to match your setup
+DB_HOST = "localhost"
+DB_PORT = "5432"
+DB_NAME = "snake_db"
+DB_USER = "postgres"
+DB_PASS = "270708"
