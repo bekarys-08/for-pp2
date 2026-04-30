@@ -13,7 +13,7 @@ pygame.mixer.init()
 
 FPS         = 60
 clock       = pygame.time.Clock()
-SW, SH      = 400, 600
+SW, SH      = 600, 600
 screen      = pygame.display.set_mode((SW, SH))
 pygame.display.set_caption("Racer — TSIS 3")
 
