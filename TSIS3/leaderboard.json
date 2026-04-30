@@ -1,6 +1,13 @@
 [
   {
     "name": "beka",
+    "score": 3321,
+    "distance": 1985,
+    "coins": 84,
+    "date": "2026-04-30"
+  },
+  {
+    "name": "beka",
     "score": 2718,
     "distance": 1518,
     "coins": 82,
@@ -8,9 +15,37 @@
   },
   {
     "name": "beka",
+    "score": 974,
+    "distance": 467,
+    "coins": 39,
+    "date": "2026-04-30"
+  },
+  {
+    "name": "beka",
+    "score": 930,
+    "distance": 416,
+    "coins": 41,
+    "date": "2026-04-30"
+  },
+  {
+    "name": "beka",
     "score": 540,
     "distance": 184,
     "coins": 31,
+    "date": "2026-04-30"
+  },
+  {
+    "name": "beka",
+    "score": 317,
+    "distance": 102,
+    "coins": 19,
+    "date": "2026-04-30"
+  },
+  {
+    "name": "beka",
+    "score": 56,
+    "distance": 20,
+    "coins": 3,
     "date": "2026-04-30"
   }
 ]
