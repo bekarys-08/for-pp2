@@ -133,7 +133,19 @@ def leaderboard_screen():
     """Leaderboard screen showing top 10 players"""
     back_btn = pygame.Rect(SCREEN_WIDTH // 2 - 60, TOTAL_H - 70, 120, 40)
     
+    # Force refresh data from database
+    print("Loading leaderboard...")
     rows = db.get_top10()
+    print(f"Loaded {len(rows)} records")
+    
+    # If no data, add some test data
+    if not rows:
+        print("No data found, adding test data...")
+        db.save_game_result("TestPlayer1", 1000, 5)
+        db.save_game_result("TestPlayer2", 2000, 8)
+        db.save_game_result("TestPlayer3", 1500, 6)
+        rows = db.get_top10()
+        print(f"Now loaded {len(rows)} records after adding test data")
     
     while True:
         for event in pygame.event.get():
@@ -168,15 +180,20 @@ def leaderboard_screen():
                 
                 color = YELLOW if rank == 1 else WHITE
                 
+                # Handle different row formats
                 if len(row) == 4:
                     username, score, level, date_str = row
+                elif len(row) == 3:
+                    username, score, level = row
+                    date_str = "N/A"
                 else:
+                    print(f"Unexpected row format: {row}")
                     continue
                 
                 if len(username) > 12:
                     username = username[:10] + ".."
                 
-                values = [str(rank), username, str(score), str(level), date_str[:12]]
+                values = [str(rank), username, str(score), str(level), date_str[:12] if date_str else "N/A"]
                 for i, val in enumerate(values):
                     val_text = font_small.render(val, True, color)
                     screen.blit(val_text, (col_x[i], y))
@@ -298,6 +315,7 @@ def run_game(username, settings):
     show_grid = settings["grid"]
     
     personal_best = db.get_personal_best(username)
+    print(f"Personal best for {username}: {personal_best}")
     
     snake = Snake(color=snake_color)
     food = Food()
@@ -472,14 +490,22 @@ def run_game(username, settings):
         clock.tick(FPS)
 
 def main():
+    # Load settings
     settings = load_settings()
     
     # Setup database
-    try:
-        db.setup_schema()
-    except Exception as e:
-        print(f"Database error: {e}")
+    print("Setting up database...")
+    if db.setup_schema():
+        print("Database ready!")
+    else:
+        print("Database connection failed! Check your config.py")
     
+    # Test database connection
+    print("\nTesting database...")
+    test_rows = db.get_top10()
+    print(f"Current leaderboard has {len(test_rows)} entries")
+    
+    # Main game loop
     while True:
         action = main_menu()
         
@@ -490,16 +516,21 @@ def main():
         elif action == "play":
             # Always ask for username before game
             username = username_entry_screen()
+            print(f"\nStarting game for player: {username}")
             
             while True:
                 result, score, level = run_game(username, settings)
                 
                 # Save result to database
+                print(f"\nGame over! Saving result: {username} - Score: {score}, Level: {level}")
                 try:
-                    db.save_game_result(username, score, level)
-                    print(f"Saved: {username} - {score} points, Level {level}")
+                    saved = db.save_game_result(username, score, level)
+                    if saved:
+                        print("✓ Result saved successfully!")
+                    else:
+                        print("✗ Failed to save result!")
                 except Exception as e:
-                    print(f"Save error: {e}")
+                    print(f"✗ Save error: {e}")
                 
                 if result == "menu":
                     break
