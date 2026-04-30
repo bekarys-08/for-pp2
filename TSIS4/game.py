@@ -1,232 +1,226 @@
 import pygame
 import random
-from config import *
 
-class Snake:
-    def __init__(self, color=GREEN):
-        self.color = color
-        self.reset()
+# Constants
+WIDTH, HEIGHT = 800, 600
+BLOCK_SIZE = 20
+BASE_SPEED = 10
 
-    def reset(self):
-        sx, sy = GRID_W // 2, GRID_H // 2
-        self.body = [(sx, sy), (sx-1, sy), (sx-2, sy)]
-        self.direction = RIGHT
-        self.next_dir = RIGHT
-        self._grow_by = 0
+# Colors for assets
+C_BG = (30, 30, 30)
+C_GRID = (50, 50, 50)
+C_FOOD_NORMAL = (200, 0, 0)
+C_FOOD_WEIGHTED = (255, 215, 0) # Gold
+C_POISON = (139, 0, 0) # Dark Red
+C_OBSTACLE = (100, 100, 100) # Gray
+C_PW_SPEED = (0, 255, 255) # Cyan
+C_PW_SLOW = (0, 0, 255) # Blue
+C_PW_SHIELD = (255, 0, 255) # Magenta
 
-    def change_direction(self, d):
-        opposite = (-self.direction[0], -self.direction[1])
-        if d != opposite:
-            self.next_dir = d
+def run_game(screen, settings, personal_best):
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont(None, 36)
+    
+    # Snake setup
+    snake = [[WIDTH//2, HEIGHT//2], [WIDTH//2 - BLOCK_SIZE, HEIGHT//2], [WIDTH//2 - 2*BLOCK_SIZE, HEIGHT//2]]
+    dx, dy = BLOCK_SIZE, 0
+    snake_color = tuple(settings["snake_color"])
+    
+    # Game stats
+    score = 0
+    level = 1
+    food_eaten_this_level = 0
+    current_speed = BASE_SPEED
+    
+    # Map objects
+    obstacles = []
+    def generate_obstacles():
+        obs = []
+        if level >= 3:
+            num_obs = level * 2
+            for _ in range(num_obs):
+                while True:
+                    ox = random.randrange(0, WIDTH, BLOCK_SIZE)
+                    oy = random.randrange(0, HEIGHT, BLOCK_SIZE)
+                    # Don't trap snake (Safe zone in middle 200x200)
+                    if not (WIDTH//2 - 100 <= ox <= WIDTH//2 + 100 and HEIGHT//2 - 100 <= oy <= HEIGHT//2 + 100):
+                        obs.append([ox, oy])
+                        break
+        return obs
+    
+    obstacles = generate_obstacles()
 
-    def move(self):
-        self.direction = self.next_dir
-        hx, hy = self.body[0]
-        new_head = (hx + self.direction[0], hy + self.direction[1])
-        self.body.insert(0, new_head)
-        if self._grow_by > 0:
-            self._grow_by -= 1
+    def get_random_pos():
+        while True:
+            x = random.randrange(0, WIDTH, BLOCK_SIZE)
+            y = random.randrange(0, HEIGHT, BLOCK_SIZE)
+            if [x, y] not in snake and [x, y] not in obstacles:
+                return [x, y]
+
+    # Food logic
+    food = get_random_pos()
+    food_type = "normal"
+    food_timer = 0
+    poison = get_random_pos() if random.random() < 0.3 else None
+
+    # Power-up logic
+    powerup = None
+    powerup_type = None
+    powerup_spawn_time = 0
+    active_effect = None
+    effect_end_time = 0
+    shield_active = False
+
+    running = True
+    while running:
+        current_time = pygame.time.get_ticks()
+        
+        # --- EVENT HANDLING ---
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return None, None
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and dy == 0: dx, dy = 0, -BLOCK_SIZE
+                elif event.key == pygame.K_DOWN and dy == 0: dx, dy = 0, BLOCK_SIZE
+                elif event.key == pygame.K_LEFT and dx == 0: dx, dy = -BLOCK_SIZE, 0
+                elif event.key == pygame.K_RIGHT and dx == 0: dx, dy = BLOCK_SIZE, 0
+
+        # --- MOVEMENT ---
+        new_head = [snake[0][0] + dx, snake[0][1] + dy]
+
+        # --- SHIELD / COLLISION LOGIC ---
+        collision = False
+        if new_head[0] < 0 or new_head[0] >= WIDTH or new_head[1] < 0 or new_head[1] >= HEIGHT:
+            collision = True
+        if new_head in snake or new_head in obstacles:
+            collision = True
+
+        if collision:
+            if shield_active:
+                shield_active = False
+                active_effect = None
+                # Wrap around screen to save the snake if it hits a wall
+                if new_head[0] < 0: new_head[0] = WIDTH - BLOCK_SIZE
+                elif new_head[0] >= WIDTH: new_head[0] = 0
+                elif new_head[1] < 0: new_head[1] = HEIGHT - BLOCK_SIZE
+                elif new_head[1] >= HEIGHT: new_head[1] = 0
+                else: 
+                    # If hit self or obstacle, just don't move forward this frame
+                    continue 
+            else:
+                running = False # GAME OVER
+                continue
+
+        snake.insert(0, new_head)
+
+        # --- FOOD COLLISION ---
+        if new_head == food:
+            if settings["sound"]: pass # pygame.mixer.Sound('eat.wav').play()
+            if food_type == "normal": score += 10
+            elif food_type == "weighted": score += 30
+            
+            food_eaten_this_level += 1
+            if food_eaten_this_level >= 5: # Level up every 5 foods
+                level += 1
+                food_eaten_this_level = 0
+                obstacles = generate_obstacles()
+            
+            # Spawn new food
+            food = get_random_pos()
+            rand_val = random.random()
+            if rand_val < 0.2:
+                food_type = "weighted"
+                food_timer = current_time + 5000 # Disappears in 5s
+            else:
+                food_type = "normal"
+            
+            # 30% chance to spawn poison
+            poison = get_random_pos() if random.random() < 0.3 else None
+
         else:
-            self.body.pop()
+            snake.pop() # Remove tail if no food eaten
 
-    def grow(self, amount=1):
-        self._grow_by += amount
+        # --- POISON COLLISION ---
+        if poison and new_head == poison:
+            if settings["sound"]: pass # pygame.mixer.Sound('hurt.wav').play()
+            if len(snake) > 0: snake.pop()
+            if len(snake) > 0: snake.pop()
+            poison = None
+            if len(snake) <= 1:
+                running = False # GAME OVER (Too short)
+                continue
 
-    def shrink(self, amount=2):
-        for _ in range(amount):
-            if len(self.body) > 1:
-                self.body.pop()
-        return len(self.body) > 1
-
-    def check_wall(self):
-        hx, hy = self.body[0]
-        return hx < 0 or hx >= GRID_W or hy < 0 or hy >= GRID_H
-
-    def check_self(self):
-        return self.body[0] in self.body[1:]
-
-    def check_obstacle(self, obstacles):
-        return self.body[0] in obstacles
-
-    def draw(self, surface, grid_show):
-        for i, (x, y) in enumerate(self.body):
-            rect = pygame.Rect(
-                x * GRID_SIZE,
-                y * GRID_SIZE + UI_HEIGHT,
-                GRID_SIZE - 1, GRID_SIZE - 1
-            )
-            col = DARK_GREEN if i == 0 else self.color
-            pygame.draw.rect(surface, col, rect)
-            if i == 0:
-                ex = rect.x + (8 if self.direction == RIGHT else
-                                2 if self.direction == LEFT else 5)
-                ey = rect.y + (8 if self.direction == DOWN else
-                                2 if self.direction == UP else 5)
-                pygame.draw.circle(surface, BLACK, (ex, ey), 2)
-
-class Food:
-    TYPES = [
-        {"name": "Small", "weight": 5, "color": GREEN, "life": 10000},
-        {"name": "Medium", "weight": 10, "color": YELLOW, "life": 7000},
-        {"name": "Large", "weight": 15, "color": RED, "life": 5000},
-    ]
-    _font = None
-
-    def __init__(self):
-        if Food._font is None:
-            Food._font = pygame.font.SysFont("Arial", 12, bold=True)
-        self.pos = (0, 0)
-        self.kind = None
-        self.born = 0
-
-    def spawn(self, occupied):
-        self.kind = random.choice(self.TYPES)
-        self.born = pygame.time.get_ticks()
-        self.pos = self._random_free(occupied)
-
-    def expired(self):
-        return pygame.time.get_ticks() - self.born > self.kind["life"]
-
-    def time_frac(self):
-        elapsed = pygame.time.get_ticks() - self.born
-        return max(0.0, 1.0 - elapsed / self.kind["life"])
-
-    def _random_free(self, occupied):
-        attempts = 0
-        while attempts < 1000:
-            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
-            if pos not in occupied:
-                return pos
-            attempts += 1
-        return (GRID_W//2, GRID_H//2)
-
-    def draw(self, surface):
-        x, y = self.pos
-        rect = pygame.Rect(x*GRID_SIZE, y*GRID_SIZE + UI_HEIGHT,
-                           GRID_SIZE-1, GRID_SIZE-1)
-        pygame.draw.rect(surface, self.kind["color"], rect)
+        # --- POWER-UP MANAGEMENT ---
+        # 1. Spawn randomly
+        if powerup is None and random.random() < 0.01:
+            powerup = get_random_pos()
+            powerup_type = random.choice(["speed", "slow", "shield"])
+            powerup_spawn_time = current_time
         
-        frac = self.time_frac()
-        bar_col = (int(255*(1-frac)), int(255*frac), 0)
-        pygame.draw.rect(surface, DARK_GRAY, (rect.x, rect.y-4, GRID_SIZE-1, 3))
-        pygame.draw.rect(surface, bar_col, (rect.x, rect.y-4, int((GRID_SIZE-1)*frac), 3))
+        # 2. Despawn if not collected in 8s
+        if powerup and current_time - powerup_spawn_time > 8000:
+            powerup = None
+            
+        # 3. Collection
+        if powerup and new_head == powerup:
+            if settings["sound"]: pass # pygame.mixer.Sound('powerup.wav').play()
+            active_effect = powerup_type
+            effect_end_time = current_time + 5000 # 5 second duration
+            if powerup_type == "shield": shield_active = True
+            powerup = None
+            
+        # 4. Effect expiration
+        if active_effect and active_effect != "shield" and current_time > effect_end_time:
+            active_effect = None
+            
+        # Apply Speed effects
+        fps = BASE_SPEED + (level * 2)
+        if active_effect == "speed": fps += 10
+        elif active_effect == "slow": fps = max(5, fps - 5)
+
+        # Disappearing food logic
+        if food_type == "weighted" and current_time > food_timer:
+            food = get_random_pos()
+            food_type = "normal"
+
+        # --- DRAWING ---
+        screen.fill(C_BG)
+        if settings["grid_overlay"]:
+            for x in range(0, WIDTH, BLOCK_SIZE): pygame.draw.line(screen, C_GRID, (x, 0), (x, HEIGHT))
+            for y in range(0, HEIGHT, BLOCK_SIZE): pygame.draw.line(screen, C_GRID, (0, y), (WIDTH, y))
+
+        # Draw obstacles
+        for obs in obstacles:
+            pygame.draw.rect(screen, C_OBSTACLE, (obs[0], obs[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # Draw Food
+        color = C_FOOD_WEIGHTED if food_type == "weighted" else C_FOOD_NORMAL
+        pygame.draw.rect(screen, color, (food[0], food[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # Draw Poison
+        if poison:
+            pygame.draw.rect(screen, C_POISON, (poison[0], poison[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # Draw Powerup
+        if powerup:
+            c = C_PW_SPEED if powerup_type == "speed" else C_PW_SLOW if powerup_type == "slow" else C_PW_SHIELD
+            pygame.draw.rect(screen, c, (powerup[0], powerup[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # Draw Snake
+        for idx, segment in enumerate(snake):
+            c = snake_color
+            if shield_active and idx == 0: c = C_PW_SHIELD # Show shield on head
+            pygame.draw.rect(screen, c, (segment[0], segment[1], BLOCK_SIZE, BLOCK_SIZE))
+
+        # HUD
+        hud_text = font.render(f"Score: {score}  Level: {level}  Best: {personal_best}", True, (255, 255, 255))
+        screen.blit(hud_text, (10, 10))
         
-        lbl = Food._font.render(str(self.kind["weight"]), True, BLACK)
-        surface.blit(lbl, lbl.get_rect(center=rect.center))
+        if active_effect:
+            eff_text = font.render(f"Active: {active_effect.upper()}", True, (255, 255, 0))
+            screen.blit(eff_text, (WIDTH - 200, 10))
 
-class PoisonFood:
-    _font = None
+        pygame.display.flip()
+        clock.tick(fps)
 
-    def __init__(self):
-        if PoisonFood._font is None:
-            PoisonFood._font = pygame.font.SysFont("Arial", 12, bold=True)
-        self.pos = None
-        self.born = 0
-        self.life = 8000
-
-    def spawn(self, occupied):
-        self.pos = self._random_free(occupied)
-        self.born = pygame.time.get_ticks()
-
-    def expired(self):
-        return pygame.time.get_ticks() - self.born > self.life
-
-    def _random_free(self, occupied):
-        attempts = 0
-        while attempts < 1000:
-            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
-            if pos not in occupied:
-                return pos
-            attempts += 1
-        return None
-
-    def draw(self, surface):
-        if self.pos is None:
-            return
-        x, y = self.pos
-        rect = pygame.Rect(x*GRID_SIZE, y*GRID_SIZE + UI_HEIGHT,
-                           GRID_SIZE-1, GRID_SIZE-1)
-        pygame.draw.rect(surface, DARK_RED, rect)
-        lbl = PoisonFood._font.render("✕", True, WHITE)
-        surface.blit(lbl, lbl.get_rect(center=rect.center))
-
-class PowerUp:
-    TYPES = {
-        "speed": {"color": ORANGE, "label": "▶▶", "duration": 5000},
-        "slow": {"color": CYAN, "label": "▶", "duration": 5000},
-        "shield": {"color": PURPLE, "label": "◈", "duration": 0},
-    }
-    _font = None
-
-    def __init__(self):
-        if PowerUp._font is None:
-            PowerUp._font = pygame.font.SysFont("Arial", 13, bold=True)
-        self.pos = None
-        self.kind = None
-        self.born = 0
-        self.field_life = 8000
-
-    def spawn(self, occupied):
-        if random.random() < 0.3:  # 30% chance to spawn
-            self.kind = random.choice(list(self.TYPES.keys()))
-            self.pos = self._random_free(occupied)
-            self.born = pygame.time.get_ticks()
-
-    def field_expired(self):
-        return (self.pos is not None and
-                pygame.time.get_ticks() - self.born > self.field_life)
-
-    def _random_free(self, occupied):
-        attempts = 0
-        while attempts < 1000:
-            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
-            if pos not in occupied:
-                return pos
-            attempts += 1
-        return None
-
-    def draw(self, surface):
-        if self.pos is None:
-            return
-        x, y = self.pos
-        rect = pygame.Rect(x*GRID_SIZE, y*GRID_SIZE + UI_HEIGHT,
-                           GRID_SIZE-1, GRID_SIZE-1)
-        info = self.TYPES[self.kind]
-        pygame.draw.rect(surface, info["color"], rect, border_radius=4)
-        pygame.draw.rect(surface, WHITE, rect, 1, border_radius=4)
-        lbl = PowerUp._font.render(info["label"], True, WHITE)
-        surface.blit(lbl, lbl.get_rect(center=rect.center))
-
-def make_obstacles(level, snake_body):
-    """Create obstacle blocks starting from level 3"""
-    if level < 3:
-        return set()
-    
-    count = min((level - 2) * 3, 20)
-    blocked = set(snake_body)
-    
-    # Don't place obstacles near snake head
-    hx, hy = snake_body[0]
-    for dx in range(-2, 3):
-        for dy in range(-2, 3):
-            blocked.add((hx+dx, hy+dy))
-    
-    result = set()
-    attempts = 0
-    while len(result) < count and attempts < 500:
-        attempts += 1
-        x = random.randint(1, GRID_W-2)
-        y = random.randint(1, GRID_H-2)
-        pos = (x, y)
-        if pos not in blocked:
-            result.add(pos)
-            blocked.add(pos)
-    
-    return result
-
-def draw_obstacles(surface, obstacles):
-    for (x, y) in obstacles:
-        rect = pygame.Rect(x*GRID_SIZE, y*GRID_SIZE + UI_HEIGHT,
-                           GRID_SIZE-1, GRID_SIZE-1)
-        pygame.draw.rect(surface, GRAY, rect)
-        pygame.draw.rect(surface, WHITE, rect, 1)
+    return score, level
