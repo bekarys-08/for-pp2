@@ -1,12 +1,12 @@
 import pygame
 
 pygame.init()
-
+#set up display
 WIDTH, HEIGHT = 900, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Paint")
 
-
+#drawing colors available
 PALETTE = [
     (0,   0,   0),    # Black
     (255, 255, 255),  # White
@@ -29,7 +29,7 @@ tool          = "pencil"
 drawing       = False
 start_pos     = (0, 0)
 
-
+#create drawing surfaces
 canvas = pygame.Surface((WIDTH, HEIGHT - TOOLBAR_H))
 canvas.fill((255, 255, 255))
 
