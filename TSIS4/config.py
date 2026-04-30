@@ -1,34 +1,46 @@
-SCREEN_WIDTH  = 600
+import pygame
+
+# Screen dimensions
+SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 400
-GRID_SIZE     = 20
-GRID_W        = SCREEN_WIDTH  // GRID_SIZE   # 30 cells wide
-GRID_H        = SCREEN_HEIGHT // GRID_SIZE   # 20 cells tall
-UI_HEIGHT     = 60
-FPS           = 60
+GRID_SIZE = 20
+GRID_W = SCREEN_WIDTH // GRID_SIZE
+GRID_H = SCREEN_HEIGHT // GRID_SIZE
+UI_HEIGHT = 60
+TOTAL_H = SCREEN_HEIGHT + UI_HEIGHT
+FPS = 30
+
 # Directions
-UP    = (0, -1)
-DOWN  = (0,  1)
-LEFT  = (-1, 0)
-RIGHT = ( 1, 0)
+UP = (0, -1)
+DOWN = (0, 1)
+LEFT = (-1, 0)
+RIGHT = (1, 0)
 
 # Colors
-BLACK      = (0,   0,   0  )
-WHITE      = (255, 255, 255)
-GREEN      = (0,   220, 0  )
-DARK_GREEN = (0,   160, 0  )
-RED        = (220, 40,  40 )
-DARK_RED   = (120, 0,   0  )   # poison food
-YELLOW     = (255, 220, 0  )
-ORANGE     = (255, 140, 0  )
-BLUE       = (50,  120, 255)
-CYAN       = (0,   200, 230)
-GRAY       = (120, 120, 120)
-DARK_GRAY  = (50,  50,  50 )
-PURPLE     = (160, 0,   200)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 220, 0)
+DARK_GREEN = (0, 160, 0)
+RED = (220, 40, 40)
+DARK_RED = (120, 0, 0)
+YELLOW = (255, 220, 0)
+ORANGE = (255, 140, 0)
+BLUE = (50, 120, 255)
+CYAN = (0, 200, 230)
+GRAY = (120, 120, 120)
+DARK_GRAY = (50, 50, 50)
+PURPLE = (160, 0, 200)
+GOLD = (255, 215, 0)
 
-# DB connection — change to match your setup
+# Game settings
+SPEED_INCREASE = 2
+LEVEL_UP_FOODS = 5
+POWERUP_DURATION = 5000  # milliseconds
+POWERUP_LIFESPAN = 8000  # milliseconds
+
+# Database config - CHANGE THESE TO MATCH YOUR POSTGRESQL SETUP
 DB_HOST = "localhost"
-DB_PORT = "1234"
+DB_PORT = "5432"  # Default PostgreSQL port
 DB_NAME = "snake_db"
 DB_USER = "postgres"
-DB_PASS = "142536"
+DB_PASS = "270708" 

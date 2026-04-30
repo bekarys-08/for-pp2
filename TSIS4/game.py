@@ -1,18 +1,18 @@
 import pygame
 import random
 from config import *
-class Snake:
 
+class Snake:
     def __init__(self, color=GREEN):
         self.color = color
         self.reset()
 
     def reset(self):
         sx, sy = GRID_W // 2, GRID_H // 2
-        self.body      = [(sx, sy), (sx-1, sy), (sx-2, sy)]
+        self.body = [(sx, sy), (sx-1, sy), (sx-2, sy)]
         self.direction = RIGHT
-        self.next_dir  = RIGHT
-        self._grow_by  = 0
+        self.next_dir = RIGHT
+        self._grow_by = 0
 
     def change_direction(self, d):
         opposite = (-self.direction[0], -self.direction[1])
@@ -57,32 +57,32 @@ class Snake:
             )
             col = DARK_GREEN if i == 0 else self.color
             pygame.draw.rect(surface, col, rect)
-            if i == 0:   # eyes on head
+            if i == 0:
                 ex = rect.x + (8 if self.direction == RIGHT else
-                                2 if self.direction == LEFT  else 5)
-                ey = rect.y + (8 if self.direction == DOWN  else
-                                2 if self.direction == UP    else 5)
+                                2 if self.direction == LEFT else 5)
+                ey = rect.y + (8 if self.direction == DOWN else
+                                2 if self.direction == UP else 5)
                 pygame.draw.circle(surface, BLACK, (ex, ey), 2)
 
 class Food:
     TYPES = [
-        {"name": "Small",  "weight": 5,  "color": GREEN,  "life": 10000},
-        {"name": "Medium", "weight": 10, "color": YELLOW, "life": 7000 },
-        {"name": "Large",  "weight": 15, "color": RED,    "life": 5000 },
+        {"name": "Small", "weight": 5, "color": GREEN, "life": 10000},
+        {"name": "Medium", "weight": 10, "color": YELLOW, "life": 7000},
+        {"name": "Large", "weight": 15, "color": RED, "life": 5000},
     ]
     _font = None
 
     def __init__(self):
         if Food._font is None:
             Food._font = pygame.font.SysFont("Arial", 12, bold=True)
-        self.pos  = (0, 0)
+        self.pos = (0, 0)
         self.kind = None
         self.born = 0
 
     def spawn(self, occupied):
         self.kind = random.choice(self.TYPES)
         self.born = pygame.time.get_ticks()
-        self.pos  = _random_free(occupied)
+        self.pos = self._random_free(occupied)
 
     def expired(self):
         return pygame.time.get_ticks() - self.born > self.kind["life"]
@@ -91,16 +91,26 @@ class Food:
         elapsed = pygame.time.get_ticks() - self.born
         return max(0.0, 1.0 - elapsed / self.kind["life"])
 
+    def _random_free(self, occupied):
+        attempts = 0
+        while attempts < 1000:
+            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
+            if pos not in occupied:
+                return pos
+            attempts += 1
+        return (GRID_W//2, GRID_H//2)
+
     def draw(self, surface):
         x, y = self.pos
         rect = pygame.Rect(x*GRID_SIZE, y*GRID_SIZE + UI_HEIGHT,
                            GRID_SIZE-1, GRID_SIZE-1)
         pygame.draw.rect(surface, self.kind["color"], rect)
-        # timer bar above cell
+        
         frac = self.time_frac()
         bar_col = (int(255*(1-frac)), int(255*frac), 0)
         pygame.draw.rect(surface, DARK_GRAY, (rect.x, rect.y-4, GRID_SIZE-1, 3))
-        pygame.draw.rect(surface, bar_col,   (rect.x, rect.y-4, int((GRID_SIZE-1)*frac), 3))
+        pygame.draw.rect(surface, bar_col, (rect.x, rect.y-4, int((GRID_SIZE-1)*frac), 3))
+        
         lbl = Food._font.render(str(self.kind["weight"]), True, BLACK)
         surface.blit(lbl, lbl.get_rect(center=rect.center))
 
@@ -110,16 +120,25 @@ class PoisonFood:
     def __init__(self):
         if PoisonFood._font is None:
             PoisonFood._font = pygame.font.SysFont("Arial", 12, bold=True)
-        self.pos  = None
+        self.pos = None
         self.born = 0
-        self.life = 8000    # 8 seconds
+        self.life = 8000
 
     def spawn(self, occupied):
-        self.pos  = _random_free(occupied)
+        self.pos = self._random_free(occupied)
         self.born = pygame.time.get_ticks()
 
     def expired(self):
         return pygame.time.get_ticks() - self.born > self.life
+
+    def _random_free(self, occupied):
+        attempts = 0
+        while attempts < 1000:
+            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
+            if pos not in occupied:
+                return pos
+            attempts += 1
+        return None
 
     def draw(self, surface):
         if self.pos is None:
@@ -133,28 +152,38 @@ class PoisonFood:
 
 class PowerUp:
     TYPES = {
-        "speed":  {"color": ORANGE, "label": "▶▶", "duration": 5000},
-        "slow":   {"color": CYAN,   "label": "▶",  "duration": 5000},
-        "shield": {"color": PURPLE, "label": "◈",  "duration": 0   },  # until triggered
+        "speed": {"color": ORANGE, "label": "▶▶", "duration": 5000},
+        "slow": {"color": CYAN, "label": "▶", "duration": 5000},
+        "shield": {"color": PURPLE, "label": "◈", "duration": 0},
     }
     _font = None
 
     def __init__(self):
         if PowerUp._font is None:
             PowerUp._font = pygame.font.SysFont("Arial", 13, bold=True)
-        self.pos   = None
-        self.kind  = None
-        self.born  = 0
-        self.field_life = 8000   # disappears from field after 8 s
+        self.pos = None
+        self.kind = None
+        self.born = 0
+        self.field_life = 8000
 
     def spawn(self, occupied):
-        self.kind = random.choice(list(self.TYPES.keys()))
-        self.pos  = _random_free(occupied)
-        self.born = pygame.time.get_ticks()
+        if random.random() < 0.3:  # 30% chance to spawn
+            self.kind = random.choice(list(self.TYPES.keys()))
+            self.pos = self._random_free(occupied)
+            self.born = pygame.time.get_ticks()
 
     def field_expired(self):
         return (self.pos is not None and
                 pygame.time.get_ticks() - self.born > self.field_life)
+
+    def _random_free(self, occupied):
+        attempts = 0
+        while attempts < 1000:
+            pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
+            if pos not in occupied:
+                return pos
+            attempts += 1
+        return None
 
     def draw(self, surface):
         if self.pos is None:
@@ -169,22 +198,30 @@ class PowerUp:
         surface.blit(lbl, lbl.get_rect(center=rect.center))
 
 def make_obstacles(level, snake_body):
+    """Create obstacle blocks starting from level 3"""
     if level < 3:
         return set()
-    count   = min((level - 2) * 3, 20)
+    
+    count = min((level - 2) * 3, 20)
     blocked = set(snake_body)
+    
+    # Don't place obstacles near snake head
     hx, hy = snake_body[0]
     for dx in range(-2, 3):
         for dy in range(-2, 3):
             blocked.add((hx+dx, hy+dy))
+    
     result = set()
     attempts = 0
     while len(result) < count and attempts < 500:
         attempts += 1
-        x = random.randint(0, GRID_W-1)
-        y = random.randint(0, GRID_H-1)
-        if (x, y) not in blocked:
-            result.add((x, y))
+        x = random.randint(1, GRID_W-2)
+        y = random.randint(1, GRID_H-2)
+        pos = (x, y)
+        if pos not in blocked:
+            result.add(pos)
+            blocked.add(pos)
+    
     return result
 
 def draw_obstacles(surface, obstacles):
@@ -193,9 +230,3 @@ def draw_obstacles(surface, obstacles):
                            GRID_SIZE-1, GRID_SIZE-1)
         pygame.draw.rect(surface, GRAY, rect)
         pygame.draw.rect(surface, WHITE, rect, 1)
-
-def _random_free(occupied):
-    while True:
-        pos = (random.randint(0, GRID_W-1), random.randint(0, GRID_H-1))
-        if pos not in occupied:
-            return pos
