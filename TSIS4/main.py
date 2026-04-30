@@ -365,48 +365,89 @@ def _game_over_screen(score: int, level: int, best: int) -> str:
         pygame.display.flip()
         clock.tick(FPS)
 
+
+
 def leaderboard_screen() -> None:
+    """Leaderboard screen showing top 10 players"""
     btn_back = pygame.Rect(SCREEN_WIDTH // 2 - 70, TOTAL_H - 55, 140, 38)
 
     try:
         rows = db.get_top10()
-        err  = ""
+        if rows is None:
+            rows = []
+        print(f"Leaderboard: {len(rows)} entries loaded")  # Отладка
     except Exception as e:
         rows = []
-        err  = str(e)
+        print(f"Leaderboard error: {e}")
 
     while True:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            if clicked(btn_back, ev): return
+                pygame.quit()
+                sys.exit()
+            if clicked(btn_back, ev):
+                return
 
         screen.fill((20, 20, 50))
-        lbl = font_large.render("TOP 10", True, YELLOW)
-        screen.blit(lbl, (center_x("TOP 10", font_large), 25))
-
-        if err:
-            screen.blit(font_small.render("DB error: " + err[:50], True, RED), (10, 90))
+        
+        # Заголовок
+        title = font_large.render("TOP 10 PLAYERS", True, YELLOW)
+        screen.blit(title, (center_x("TOP 10 PLAYERS", font_large), 25))
+        
+        if not rows:
+            # Нет данных
+            no_data_msg = "No scores yet! Play a game first."
+            no_data = font.render(no_data_msg, True, GRAY)
+            screen.blit(no_data, (center_x(no_data_msg), 200))
         else:
+            # Заголовки таблицы
             headers = ["#", "Player", "Score", "Level", "Date"]
-            col_x   = [10, 45, 210, 305, 360]
-            for i, h in enumerate(headers):
-                screen.blit(font_small.render(h, True, YELLOW), (col_x[i], 90))
-            pygame.draw.line(screen, GRAY, (8, 108), (SCREEN_WIDTH - 8, 108), 1)
-
-            for rank, (uname, sc, lv, dt) in enumerate(rows, 1):
-                y   = 115 + (rank - 1) * 36
-                col = YELLOW if rank == 1 else WHITE
-                for i, val in enumerate([str(rank), uname[:14], str(sc), str(lv), dt]):
-                    screen.blit(font_small.render(val, True, col), (col_x[i], y))
-
-        if not rows and not err:
-            screen.blit(font.render("No scores yet!", True, GRAY),
-                        (center_x("No scores yet!"), 200))
-
+            col_x = [30, 80, 220, 320, 440]
+            
+            for i, header in enumerate(headers):
+                header_text = font_small.render(header, True, YELLOW)
+                screen.blit(header_text, (col_x[i], 90))
+            
+            # Линия под заголовками
+            pygame.draw.line(screen, GRAY, (20, 108), (SCREEN_WIDTH - 20, 108), 2)
+            
+            # Отображение строк
+            for rank, row in enumerate(rows, 1):
+                y = 125 + (rank - 1) * 35
+                if y > TOTAL_H - 60:
+                    break
+                
+                # Цвет для первого места
+                text_color = YELLOW if rank == 1 else WHITE
+                
+                # Безопасная распаковка
+                try:
+                    if len(row) == 4:
+                        username, score, level, date_str = row
+                    elif len(row) == 3:
+                        username, score, level = row
+                        date_str = "N/A"
+                    else:
+                        continue
+                    
+                    # Обрезаем длинные имена
+                    if len(username) > 12:
+                        username = username[:10] + ".."
+                    
+                    # Отображаем значения
+                    values = [str(rank), username, str(score), str(level), date_str[:12]]
+                    for i, val in enumerate(values):
+                        val_text = font_small.render(val, True, text_color)
+                        screen.blit(val_text, (col_x[i], y))
+                except Exception as e:
+                    print(f"Error displaying row {rank}: {e}")
+                    continue
+        
+        # Кнопка назад
         draw_btn(btn_back, "Back")
         pygame.display.flip()
         clock.tick(FPS)
+
 
 
 def settings_screen(settings: dict) -> dict:
