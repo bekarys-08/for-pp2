@@ -14,6 +14,13 @@
     "date": "2026-04-30"
   },
   {
+    "name": "\u043a\u0430\u0439\u044b\u0440\u0436\u0430\u043d",
+    "score": 1627,
+    "distance": 1013,
+    "coins": 36,
+    "date": "2026-04-30"
+  },
+  {
     "name": "serik",
     "score": 1202,
     "distance": 505,
@@ -60,13 +67,6 @@
     "score": 317,
     "distance": 102,
     "coins": 19,
-    "date": "2026-04-30"
-  },
-  {
-    "name": "beka",
-    "score": 56,
-    "distance": 20,
-    "coins": 3,
     "date": "2026-04-30"
   }
 ]
