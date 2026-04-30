@@ -61,7 +61,7 @@ END;
 $$;
 
 
--- 3. search_contacts  (searches name, email, and all phones)
+-- 3. search_contacts (searches name, email, and all phones)
 CREATE OR REPLACE FUNCTION search_contacts(p_query TEXT)
 RETURNS TABLE (
     contact_id INTEGER,
@@ -82,24 +82,24 @@ BEGIN
         c.last_name,
         c.email,
         c.birthday,
-        g.name  AS group_name,
+        g.name      AS group_name,
         ph.phone,
-        ph.type AS phone_type
+        ph.type     AS phone_type
     FROM contacts c
-    LEFT JOIN groups g  ON g.id  = c.group_id
+    LEFT JOIN groups g  ON g.id = c.group_id
     LEFT JOIN phones ph ON ph.contact_id = c.id
     WHERE
         c.first_name   ILIKE '%' || p_query || '%'
-        OR c.last_name  ILIKE '%' || p_query || '%'
-        OR c.email      ILIKE '%' || p_query || '%'
-        OR ph.phone     ILIKE '%' || p_query || '%'
+        OR c.last_name   ILIKE '%' || p_query || '%'
+        OR c.email       ILIKE '%' || p_query || '%'
+        OR ph.phone      ILIKE '%' || p_query || '%'
         OR c.phone_number ILIKE '%' || p_query || '%'
     ORDER BY c.first_name, c.last_name;
 END;
 $$;
 
 
--- 4. get_contacts_page  (paginated listing)
+-- 4. get_contacts_page (paginated listing)
 CREATE OR REPLACE FUNCTION get_contacts_page(p_limit INT, p_offset INT)
 RETURNS TABLE (
     contact_id INTEGER,
