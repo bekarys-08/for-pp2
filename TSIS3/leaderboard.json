@@ -28,6 +28,13 @@
     "date": "2026-04-30"
   },
   {
+    "name": "beka",
+    "score": 1147,
+    "distance": 597,
+    "coins": 40,
+    "date": "2026-05-01"
+  },
+  {
     "name": "amangali",
     "score": 1013,
     "distance": 507,
@@ -61,12 +68,5 @@
     "distance": 184,
     "coins": 31,
     "date": "2026-04-30"
-  },
-  {
-    "name": "beka",
-    "score": 522,
-    "distance": 194,
-    "coins": 28,
-    "date": "2026-05-01"
   }
 ]
