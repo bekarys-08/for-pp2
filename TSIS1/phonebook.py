@@ -209,6 +209,7 @@ def list_sorted():
     finally:
         cur.close()
         conn.close()
+    
 
 
 def paginated_view():

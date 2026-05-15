@@ -56,17 +56,17 @@
     "date": "2026-04-30"
   },
   {
+    "name": "beka",
+    "score": 925,
+    "distance": 532,
+    "coins": 26,
+    "date": "2026-05-01"
+  },
+  {
     "name": "aigul",
     "score": 667,
     "distance": 309,
     "coins": 28,
-    "date": "2026-04-30"
-  },
-  {
-    "name": "beka",
-    "score": 540,
-    "distance": 184,
-    "coins": 31,
     "date": "2026-04-30"
   }
 ]
